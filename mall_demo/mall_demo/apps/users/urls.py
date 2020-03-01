@@ -24,5 +24,7 @@ urlpatterns = [
     url(r'^register/$', views.RegisterView.as_view()),
     url(r'^login/$', views.LoginView.as_view()),
     url(r'^logout/$', views.LogoutView.as_view()),
-
+    url(r'^info/$', views.UserInfoView.as_view()),
+    url(r'^emails/$', views.EmailView.as_view()),
+    url(r'^emails/verification/$', views.VerifyEmailView.as_view()),
 ]

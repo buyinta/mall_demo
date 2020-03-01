@@ -1,8 +1,11 @@
 import json
 import re
+import logging
+logger=logging.getLogger('django')
 
 from django import http
 from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 
 # Create your views here.
@@ -187,3 +190,92 @@ class LogoutView(View):
 
         # 返回响应
         return response
+
+
+class UserInfoView(LoginRequiredMixin, View):
+    """用户中心"""
+
+    def get(self, request):
+        """提供个人信息界面"""
+
+        # 获取界面需要的数据,进行拼接
+        info_data = {
+            'username': request.user.username,
+            'mobile': request.user.mobile,
+            'email': request.user.email,
+            'email_active': request.user.email_active
+        }
+
+        # 返回响应
+        return http.JsonResponse({'code':0,
+                                  'errmsg':'ok',
+                                  'info_data':info_data})
+
+
+class EmailView(View):
+    """添加邮箱"""
+
+    def put(self, request):
+        """实现添加邮箱逻辑"""
+        # 接收参数
+        json_dict = json.loads(request.body.decode())
+        email = json_dict.get('email')
+
+        # 校验参数
+        if not email:
+            return http.JsonResponse({'code': 400,
+                                      'errmsg': '缺少email参数'})
+        if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+            return http.JsonResponse({'code': 400,
+                                      'errmsg': '参数email有误'})
+
+
+        # 赋值 email 字段
+        try:
+            request.user.email = email
+            request.user.save()
+        except Exception as e:
+            logger.error(e)
+            return http.JsonResponse({'code': 400,
+                                      'errmsg': '添加邮箱失败'})
+
+        from celery_tasks.email.tasks import send_verify_email
+        # 调用发送的函数:
+        verify_url = request.user.generate_verify_email_url()
+        send_verify_email.delay(email, verify_url)
+
+        return http.JsonResponse({'code': 0,
+                                  'errmsg': '添加邮箱成功'})
+
+
+class VerifyEmailView(View):
+    """验证邮箱"""
+
+    def put(self, request):
+        """实现邮箱验证逻辑"""
+        # 接收参数
+        token = request.GET.get('token')
+
+        # 校验参数：判断 token 是否为空和过期，提取 user
+        if not token:
+            return http.JsonResponse({'code':400,
+                                  'errmsg':'缺少token'})
+
+        # 调用上面封装好的方法, 将 token 传入
+        user = User.check_verify_email_token(token)
+        if not user:
+            return http.JsonResponse({'code':400,
+                                  'errmsg':'无效的token'})
+
+        # 修改 email_active 的值为 True
+        try:
+            user.email_active = True
+            user.save()
+        except Exception as e:
+            logger.error(e)
+            return http.JsonResponse({'code':400,
+                                  'errmsg':'激活邮件失败'})
+
+        # 返回邮箱验证结果
+        return http.JsonResponse({'code':0,
+                                  'errmsg':'ok'})

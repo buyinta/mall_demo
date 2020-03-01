@@ -7,4 +7,4 @@ if not os.getenv('DJANGO_SETTINGS_MODULE'):
 # celery -A celery_tasks.main worker --pool=solo -l info
 celery_app = Celery('mall_demo')
 celery_app.config_from_object('celery_tasks.config')
-celery_app.autodiscover_tasks(['celery_tasks.sms'])
+celery_app.autodiscover_tasks(['celery_tasks.sms','celery_tasks.email'])
