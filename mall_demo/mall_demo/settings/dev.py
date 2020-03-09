@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'areas.apps.AreasConfig',
     'contents.apps.ContentsConfig',
     'goods.apps.GoodsConfig',
+    'haystack',
 
 
 ]
@@ -219,3 +220,15 @@ CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
 
 AUTHENTICATION_BACKENDS = ['users.utils.UsernameMobileAuthBackend']
 EMAIL_VERIFY_URL = 'http://www.mall_demo.site:8080/success_verify_email.html?token='
+
+# Haystack
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
+        'URL': 'http://172.16.238.128:9200/', # Elasticsearch服务器ip地址，端口号固定为9200
+        'INDEX_NAME': 'mall_demo', # Elasticsearch建立的索引库的名称
+    },
+}
+
+# 当添加、修改、删除数据时，自动生成索引
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'

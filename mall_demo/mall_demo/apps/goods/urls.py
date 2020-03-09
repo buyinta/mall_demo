@@ -21,4 +21,5 @@ from goods import views
 urlpatterns = [
 url(r'^list/(?P<category_id>\d+)/skus/$', views.ListView.as_view()),
 url(r'^hot/(?P<category_id>\d+)/$', views.HotGoodsView.as_view()),
+url(r'^search/$', views.MySearchView()),
 ]

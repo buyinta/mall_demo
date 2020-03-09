@@ -2,6 +2,7 @@ from django import http
 from django.shortcuts import render
 from django.core.paginator import Paginator,EmptyPage
 from django.views import View
+from haystack.views import SearchView
 
 from goods.models import GoodsCategory, SKU
 from goods.utils import get_breadcrumb
@@ -95,3 +96,24 @@ class HotGoodsView(View):
         return http.JsonResponse({'code': 0,
                                   'errmsg': 'OK',
                                   'hot_skus': hot_skus})
+
+
+class MySearchView(SearchView):
+    '''重写SearchView类'''
+    def create_response(self):
+        page = self.request.GET.get('page')
+        # 获取搜索结果
+        context = self.get_context()
+        data_list = []
+        for sku in context['page'].object_list:
+            data_list.append({
+                'id':sku.object.id,
+                'name':sku.object.name,
+                'price':sku.object.price,
+                'default_image_url':sku.object.default_image_url,
+                'searchkey':context.get('query'),
+                'page_size':context['page'].paginator.num_pages,
+                'count':context['page'].paginator.count
+            })
+        # 拼接参数, 返回
+        return http.JsonResponse(data_list, safe=False)
